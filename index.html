@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+    <link rel="stylesheet" href="app.min.css">
+    <style>
+		
+			@-webkit-keyframes pulse {
+				0% {
+					background-color: #CCC;
+				}
+				25% {
+					background-color: #EEE;
+				}
+				50% {
+					background-color: #CCC;
+				}
+				75% {
+					background-color: #EEE;
+				}
+				100% {
+					background-color: #CCC;
+				}
+			}
+     
+    </style>
+  </head>
+
+  <body>
+    <div class="app-page" data-page="home">
+      <div class="app-topbar blue">
+        <div class="app-title">Send An Email: </div>
+      </div>
+      <div class="app-content">
+          <p class="app-section">
+             Click below to send an email!
+          </p>
+        
+		  
+          <div class="app-section" id="contactList">
+					
+					
+				</div>
+        <div class="app-section">
+          <div class="app-button" id="newUser">Send to new user</div>
+        </div>
+      </div>
+    </div>
+	  <div class="app-page" data-page="sendemail">
+			<div class="app-topbar">
+				<div class="app-title"><span class="app-icon"></span>Send Email</div>
+				<div class="right app-button" data-back>Done</div>
+			</div>
+
+			<div class="app-content">
+				
+				<div class="app-section" id="message">
+					
+				</div>
+				
+				<div class="app-section">
+					From: <input class="app-input" id="senderEmail" placeholder="Sender Email Address">
+				</div>
+				<div class="app-section">
+					To: <input class="app-input" id="recipientEmail" placeholder="Recipient Email Address">
+				</div>
+
+				<form class="app-section">
+					<input class="app-input" name="subject" placeholder="Subject" id="subject">
+					<textarea class="app-input" name="message" placeholder="Message" id="content"></textarea>
+					<div class="app-button green app-submit" id="sendbutton">Send</div>
+				</form>
+			</div>
+		</div>
+    
+
+    <script src="zepto.js"></script>
+    <script src="app.min.js"></script>
+    <script>
+  
+        
+      App.controller('home', function (page) {
+		  if(typeof localStorage !== "undefined"){
+			  
+			  $(page).find("#newUser").clickable().click(function(){
+				  
+				 if(localStorage.getItem("recipientEmail")  !== null){
+				 		localStorage.removeItem("recipientEmail");
+				  }
+				  App.load("sendemail");
+			  });
+			  if(localStorage.getItem("recipientList") !== null){
+				  
+				  var recipientList = JSON.parse(localStorage.getItem("recipientList"));
+				  $.each( recipientList, function(index,value){
+					$(page).find("#contactList").append('<div class="app-button redirect" >'+value+'</div>');
+				  });
+				  $(page).find("#contactList").show();
+				  
+				  $(page).find(".redirect").clickable().on("click",function(){
+					  
+					  localStorage.setItem("recipientEmail",$(this).html());
+					
+					  App.load('sendemail');
+					 
+					  
+				  });
+				  
+			  }
+			  else{
+				  $(page).find("#contactList").hide();
+			  }
+		  }
+              
+      });
+	App.controller('sendemail', function (page) {
+            
+		$(page).find("#message").hide();
+		
+		if(typeof localStorage !== "undefined"){
+			
+			if(localStorage.getItem("senderEmail")!== null){
+				$(page).find("#senderEmail").val(localStorage.getItem("senderEmail"));
+			}
+			if(localStorage.getItem("recipientEmail") !== null){
+				$(page).find("#recipientEmail").val(localStorage.getItem("recipientEmail"));
+			}
+		}
+		
+		
+		$(page).find('#sendbutton').clickable().on('click', function () { 
+			$.ajax({
+			  type: 'GET',
+			  url: 'http://emailappchallengemadebysana-com.stackstaging.com/',
+			  // data to be added to query string:
+			  data: { to: $("#recipientEmail").val(),
+					from: $("#senderEmail").val(),
+					subject: $("#subject").val(),
+					content: $("#content").val()},
+			  // type of data we are expecting in return:
+			  dataType: 'jsonp',
+			  timeout: 300,
+			  context: $('body'),
+			  success: function(data){
+				
+				if(data.success == true){
+					$(page).find("#message").html("Your email was snet successfully").show();
+				}  
+				  else{
+					   $(page).find("#message").html("Your email could not be sent! please try again later").show();
+					  
+				  }
+				  
+			  },
+			  error: function(xhr, type){
+				$(page).find("#message").html("Your email could not be sent! please try again later").show();
+			  }
+		});
+			
+			if(typeof localStorage !=="undefined"){
+				localStorage.setItem("senderEmail",$("#senderEmail").val());
+				
+				var recipientList=new Array();
+				if(localStorage.getItem("recipientList") !== null){
+					recipientList = JSON.parse(localStorage.getItem("recipientList"));
+				}
+				if (($.inArray($("#recipientEmail").val(),recipientList )) == -1){
+					recipientList.push($("#recipientEmail").val());
+					
+					recipientList.sort();
+					localStorage.setItem("recipientList",JSON.stringify(recipientList));
+					console.log(recipientList);
+				}
+				
+			}
+			else{
+				//sana 
+			}
+			
+		});
+      });
+
+
+      try {
+        App.restore();
+      } catch (err) {
+        App.load('home');
+      }
+    </script>
+  </body>
+</html>
